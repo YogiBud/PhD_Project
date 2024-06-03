@@ -18,16 +18,73 @@ library(tidyr)
 
 ```{r, echo=FALSE}
 ravis_data <- openxlsx::read.xlsx(xlsxFile = "Annexure_2_Fold_change.xlsx",
-                                  sheet = 1) %>%
-    as.data.frame()
+                                  sheet = 3)
 
 head(ravis_data)
 
-gene_info <- ravis_data[1, ]
+# subset with
+gene_info <- ravis_data[1:nrow(ravis_data), 9:ncol(ravis_data)]
+
+#add rownames
+rownames(gene_info) <- ravis_data$S_No
+
+# perform PCA
+pca_result <- prcomp(gene_info, scale = TRUE)
+
+# make pca plot
+ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = as.factor())) +
+  theme_minimal() +
+    labs(title = "PCA plot")
+
+# perform clustering using PCA
+clustering_result <- kmeans(pca_result$x[, 1:2], centers = 4)
+
+# Add cluster labels to gene_info
+gene_info$cluster <- clustering_result$cluster
+gene_info$age <- ravis_data$Age
+gene_info$gender <- ravis_data$Sex
+gene_info$group <- ravis_data$Group
+# visualize the PCA result
+ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = as.factor(gene_info$cluster))) +
+  theme_minimal() +
+    labs(title = "PCA plot with cluster labels")
+
+# add rownames label to each dot in ggplot
+ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
+    geom_point(aes(color = as.factor(gene_info$cluster))) +
+    geom_text(aes(label = rownames(gene_info)), hjust = 0, vjust = 0) +
+    theme_minimal() +
+    labs(title = "PCA plot with cluster labels")
+
+ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
+    geom_point(aes(color = as.factor(gene_info$cluster))) +
+    geom_text(aes(label = gene_info$age), hjust = 0, vjust = 0) +
+    theme_minimal() +
+    labs(title = "PCA plot with cluster labels")
+
+# repel the labels in PC plots
+ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
+    geom_point(aes(color = gene_info$group)) +
+    ggrepel::geom_text_repel(aes(label = gene_info$group), hjust = 0, vjust = 0) +
+    theme_minimal() +
+    labs(title = "PCA plot with cluster labels")
+
+
+
+
+# Perform clustering analysis on ravis_data
+clustering_result <- kmeans(ravis_data, centers = 3)
+
+# Add cluster labels to ravis_data
+ravis_data$cluster <- clustering_result$cluster
+
+gene_info
+
 ravis_data <- ravis_data[-1, ]
 ravis_data_long <- tidyr::pivot_longer(ravis_data, cols = c(Post1, Post3, Post6, Post12), 
                                        names_to = "Timepoint", values_to = "Expression")
-
 
 
 
