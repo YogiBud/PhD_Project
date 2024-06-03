@@ -1,0 +1,48 @@
+---
+title: "Just practice"
+author: "Yogesh"
+date: "2020-07-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+```{r, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+```{r, echo=FALSE}
+ravis_data <- openxlsx::read.xlsx(xlsxFile = "Annexure_2_Fold_change.xlsx",
+                                  sheet = 1)
+
+head(ravis_data)
+
+gene_info <- ravis_data[1, ]
+ravis_data <- ravis_data[-1, ]
+ravis_data_long <- tidyr::pivot_longer(ravis_data, cols = c(Post1, Post3, Post6, Post12), 
+                                       names_to = "Timepoint", values_to = "Expression")
+
+
+
+
+```
+
+# clustering 
+```{r, echo=FALSE}
+
+billboard
+billboard %>%
+  pivot_longer(
+    cols = starts_with("wk"),
+    names_to = "week",
+    names_prefix = "wk",
+    values_to = "rank",
+    values_drop_na = TRUE
+  )
+
+```
