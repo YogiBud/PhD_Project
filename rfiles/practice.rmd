@@ -18,7 +18,8 @@ library(tidyr)
 
 ```{r, echo=FALSE}
 ravis_data <- openxlsx::read.xlsx(xlsxFile = "Annexure_2_Fold_change.xlsx",
-                                  sheet = 1)
+                                  sheet = 1) %>%
+    as.data.frame()
 
 head(ravis_data)
 
@@ -44,5 +45,7 @@ billboard %>%
     values_to = "rank",
     values_drop_na = TRUE
   )
+
+
 
 ```
