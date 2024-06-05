@@ -21,21 +21,59 @@ ravis_data <- openxlsx::read.xlsx(xlsxFile = "Annexure_2_Fold_change.xlsx",
                                   sheet = 3)
 
 head(ravis_data)
+unique(ravis_data$Name)
 
-# subset with
-gene_info <- ravis_data[1:nrow(ravis_data), 9:ncol(ravis_data)]
+ravis_data_formatted <- 
+  pivot_longer(ravis_data,
+                          cols = c(-S_No,
+                                  -LabNo,
+                                  -Tx_No,
+                                  -Name,
+                                  -Age,
+                                  -Sex,
+                                  -Group,
+                                  -CRNo), 
+                           names_to = "stuff",
+                           values_to = "Expression") %>%
+    separate("stuff", sep = "_", into = c("gene", "timepoint")) %>%
+	mutate(Expression = round(Expression, 5)) %>%
+    mutate(name_age_timepoint = paste(S_No, Name, Age, timepoint, sep = "_")) %>%
+    select(-Name, -timepoint, -Tx_No, -S_No, -CRNo, -LabNo, -Age, -Sex, -Group) %>%
+    tidyr::pivot_wider(names_from = name_age_timepoint,
+                       values_from = Expression,
+					   	values_fill = 0)
 
-#add rownames
-rownames(gene_info) <- ravis_data$S_No
+# PCA analysis
+run_pca <- ravis_data_formatted %>%
+    select(gene, matches("Post")) %>% 
+	arrange(gene) %>%
+    tibble::column_to_rownames(var = "gene") %>%
+	t() %>%
+    prcomp(center = TRUE, scale = TRUE)
 
-# perform PCA
-pca_result <- prcomp(gene_info, scale = TRUE)
+# append the run_pca$x to the ravis_data_formatted
+ravis_data_metadata <- ravis_data_formatted %>%
+	tibble::column_to_rownames(var = "gene")
 
-# make pca plot
-ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = as.factor())) +
-  theme_minimal() +
-    labs(title = "PCA plot")
+
+pca_result <- cbind(ravis_data_formatted, run_pca$x)
+
+# visualize the PCA result
+ggplot(data = as.data.frame(run_pca$x), aes(x = PC1, y = PC2)) +
+	geom_point() +
+	theme_minimal() +
+	geom_text(aes(label = rownames(run_pca$x)), hjust = 0, vjust = 0) +	
+	ggrepel::geom_text_repel(aes(label = rownames(run_pca$x)), hjust = 0, vjust = 0) +
+	labs(title = "PCA plot")
+
+
+ggplot(data = as.data.frame(run_pca$x), aes(x = PC1, y = PC2)) +
+	geom_point() +
+	geom_text(aes(label = rownames(run_pca$x)), hjust = 0, vjust = 0) +
+	theme_minimal() +
+	labs(title = "PCA plot")
+
+
 
 # perform clustering using PCA
 clustering_result <- kmeans(pca_result$x[, 1:2], centers = 4)
@@ -72,19 +110,6 @@ ggplot(data = as.data.frame(pca_result$x), aes(x = PC1, y = PC2)) +
     labs(title = "PCA plot with cluster labels")
 
 
-
-
-# Perform clustering analysis on ravis_data
-clustering_result <- kmeans(ravis_data, centers = 3)
-
-# Add cluster labels to ravis_data
-ravis_data$cluster <- clustering_result$cluster
-
-gene_info
-
-ravis_data <- ravis_data[-1, ]
-ravis_data_long <- tidyr::pivot_longer(ravis_data, cols = c(Post1, Post3, Post6, Post12), 
-                                       names_to = "Timepoint", values_to = "Expression")
 
 
 
